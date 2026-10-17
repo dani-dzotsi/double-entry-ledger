@@ -5,5 +5,9 @@ import(
 )
 
 func main(){
+
 	fmt.Println("Hello double entry ledger")
+
+	cfg := config.Load()
+	
 }
