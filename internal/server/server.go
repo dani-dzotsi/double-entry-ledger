@@ -1,6 +1,9 @@
 package server
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/Danikarat/double-entry-ledger/internal/config"
+	"github.com/gin-gonic/gin"
+)
 
 
 type Server struct{
