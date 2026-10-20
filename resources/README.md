@@ -1,26 +1,64 @@
-# Ledger API: Project Documentation
+# Ledger API
 
-A double-entry ledger API written in Go (Gin) on Microsoft SQL Server. It is a portfolio-grade learning project: the product is real enough to be credible, and the main goal is fluency in **MSSQL** and **Go**.
+A double-entry ledger API implemented in Go with Gin, PostgreSQL, and GORM. This project follows the [Ledger API Implementation Assignment](Ledger%20API%20Implementation%20Assignment%20(Go,%20Gin,%20Postgres,%20GORM).md), delivered in milestones M1 through M5.
 
-## Reading order
+## Project status
 
-| # | Document | Purpose | Read it when |
-|---|----------|---------|--------------|
-| 1 | [01-PRD.md](01-PRD.md) | What we are building and why; scope; milestones; success metrics | Before anything else |
-| 2 | [02-SRS.md](02-SRS.md) | Numbered functional and non-functional requirements, invariants, error model | While implementing any feature |
-| 3 | [03-architecture-and-adrs.md](03-architecture-and-adrs.md) | System design, concurrency strategy, code layout, and every major decision as an ADR | Before designing a package or query |
-| 4 | [04-data-model.md](04-data-model.md) | Full target T-SQL schema, indexes, constraints, canonical queries | When writing migrations or SQL |
-| 5 | [openapi.yaml](openapi.yaml) | HTTP contract for the final (M5) API | When writing handlers or tests |
-| 6 | [05-delivery-plan.md](05-delivery-plan.md) | Five milestones, tasks, acceptance criteria, test cases | Every working session |
+The implementation is at the start of M1. Treat the assignment as the source of truth for requirements, endpoint behavior, database constraints, business rules, and acceptance criteria. Build and verify one milestone at a time; do not begin the next milestone until the current one meets its stated checks.
 
-## Conventions
+## Technology and conventions
 
-- **Requirement IDs** look like `FR-TRF-012`, `NFR-PERF-002`, `INV-3`, `ADR-007`, `TC-M2-04`. Use them in commit messages, PR titles, test names and code comments (for example `// FR-IDM-003`).
-- **Source of truth order** when documents disagree: SRS, then Data model, then OpenAPI, then Architecture. Fix the lower-priority document in the same change.
-- **Milestone tags** (`M1` to `M5`) mark when a requirement, table or endpoint lands. Do not build ahead of the current milestone, except where a document says a column is created early.
-- **Money is always an integer in minor units.** There is no floating point anywhere in money paths (INV-9).
-- **Definition of done** for any task: requirement implemented, tests written (with the TC IDs from the delivery plan), invariant checker green, docs updated if behavior changed.
+- Go, Gin, PostgreSQL, and GORM.
+- Use versioned SQL migrations. Do not use GORM `AutoMigrate`.
+- Use UUIDs for account and transfer identifiers, and BIGINT identity keys for ledger entries and jobs.
+- Represent money as `int64` minor units. Use `shopspring/decimal` for FX rates; never use floating point for money calculations.
+- Store timestamps as UTC `timestamptz` and return RFC 3339 values in JSON.
+- Serve application endpoints under `/v1`; expose `/healthz` and `/readyz` outside that path.
+- Authenticate `/v1` routes with `X-API-Key` values loaded from `API_KEYS`.
+- Return errors using the common `{ "error": { "code": "...", "message": "...", "details": ... } }` envelope described in the assignment.
+- Use request IDs and structured `slog` logging.
+- Use cursor pagination for list endpoints, with a default limit of 50 and maximum of 200.
+- Require `Idempotency-Key` on transfer and deposit creation.
 
-## Using these documents with a coding assistant
+## Milestones
 
-Give the assistant `docs/` as context, name the milestone you are on, and ask for one task from `05-delivery-plan.md` at a time. Ask it to cite requirement IDs in its changes. Review SQL by hand: locking and isolation behavior is the learning goal, so do not accept SQL you cannot explain.
+| Milestone | Scope |
+| --- | --- |
+| M1: Core ledger | Runnable service, health checks, migrations and seeds, API-key and request-ID middleware, accounts, currencies, synchronous same-currency deposits and transfers, idempotency. |
+| M2: Async processing and holds | Holds, PostgreSQL job queue, worker pool, retries and recovery, asynchronous deposits and transfers, job operations endpoint. |
+| M3: Reversals and reporting | Reversals, immutable ledger entries, account entries and statements, reconciliation endpoint. |
+| M4: Multi-currency and FX | Append-only FX rates, rate endpoints, cross-currency posting and exact FX reversals. |
+| M5: Provider and polish | External rate refresh, PL/pgSQL posting implementation, comparative benchmark, CI, final OpenAPI and run documentation. |
+
+Follow the assignment’s detailed build sequence and acceptance criteria for each milestone. In particular, finish M1’s validation, integration, idempotency, and concurrency checks before starting M2.
+
+## Core accounting rules
+
+- Every posted transfer creates balanced debit and credit entries per currency.
+- A CREDIT increases an account balance; a DEBIT decreases it.
+- Customer balances and available balances (`balance - held_amount`) must not become negative.
+- Account balance changes and ledger entries are committed atomically. Lock affected accounts in ascending ID order.
+- Ledger entries are immutable. Account balances must reconcile to their entries, and active holds must reconcile to `held_amount`.
+- Deposits move value from the currency’s FUNDING system account. Customer-facing transfers debit customer accounts; system accounts are used only by internal posting paths.
+
+The assignment’s invariants and error-code table define the full expected behavior.
+
+## Repository layout
+
+The current code is organized under `cmd/` and `internal/`, with packages for configuration, server routing, middleware, accounts, transactions, ledger entries, currencies, and auth. The assignment suggests a target separation between HTTP handlers, domain/service logic, repository interfaces, and database implementations. Evolve the current layout toward that separation as milestones are implemented; services should depend on repository interfaces rather than GORM directly.
+
+Supporting API contract and assignment documents live in this directory:
+
+- [Implementation assignment](Ledger%20API%20Implementation%20Assignment%20(Go,%20Gin,%20Postgres,%20GORM).md) — requirements, schema, endpoint definitions, milestones, invariants, and done criteria.
+- [OpenAPI specification](openapi.yaml) — API contract; keep it aligned with the implemented milestone and final API.
+
+## Development workflow
+
+1. Select the next incomplete task from the current milestone in the assignment.
+2. Implement it with its required database constraints and error mapping.
+3. Add the unit or PostgreSQL integration coverage required for that behavior.
+4. Check relevant ledger invariants after tests that move money.
+5. Update the OpenAPI contract and this documentation when externally visible behavior changes.
+6. Move to the next milestone only after the current milestone’s acceptance checks pass.
+
+The assignment requires real PostgreSQL integration tests, race-enabled concurrency tests, and eventually CI with linting and a coverage threshold. Consult it for the exact test requirements at each stage.

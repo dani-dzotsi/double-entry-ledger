@@ -1,7 +1,7 @@
 package server
 
 import (
-	"github.com/Danikarat/double-entry-ledger/internal/config"
+	"github.com/dani-dzotsi/double-entry-ledger/internal/config"
 	"github.com/gin-gonic/gin"
 )
 
