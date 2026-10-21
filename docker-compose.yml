@@ -1,47 +1,23 @@
 services:
-  mssql:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: mssql_db
+  postgres_db:
+    image: postgres:16-alpine
+    container_name: ledger_db
     environment:
-      ACCEPT_EULA: "Y"
-      MSSQL_PID: Developer
-      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD}"
+      POSTGRES_USER: ${DBUSER}
+      POSTGRES_DB: ${DBNAME}
+      POSTGRES_PASSWORD: "${DBPASSWORD}"
     ports:
-      - "1433:1433"
+      - "5433:5432"
     volumes:
-      - mssql_data:/var/opt/mssql
+      - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test:
-        - CMD
-        - /opt/mssql-tools18/bin/sqlcmd
-        - -S
-        - localhost
-        - -U
-        - sa
-        - -P
-        - "${MSSQL_SA_PASSWORD}"
-        - -C
-        - -Q
-        - "SELECT 1"
+      test: ["CMD-SHELL", "pg_isready -U ${DBUSER} -d ${DBNAME}"]
       interval: 1m30s
       timeout: 30s
       retries: 5
       start_period: 30s
-
-  db-init:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    entrypoint: ["/bin/bash", "/scripts/init-db.sh"]
-    environment:
-      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD}"
-      MSSQL_DATABASE: "${MSSQL_DATABASE}"
-    volumes:
-      - ./scripts/init-db.sh:/scripts/init-db.sh:ro
-    depends_on:
-      mssql:
-        condition: service_healthy
-    restart: "no"
     
 
 volumes:
-  mssql_data:
+  postgres_data:
