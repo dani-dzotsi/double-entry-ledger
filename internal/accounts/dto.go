@@ -1,23 +1,30 @@
 package accounts
 
 import (
-	"database/sql"
 	"time"
+
+	"github.com/google/uuid"
 )
 
-
 type CreateAccountsRequest struct {
-	Name string `json:"name" binding:"required"`
+	Name     string `json:"name" binding:"required"`
 	Currency string `json:"currency" binding:"required"`
-	AccountType string `json:"account_type" oneoff:"CUSTOMER SYSTEM"`
-	SystemRole string `json:"system_role" oneoff:"EXTERNAL RX_CLEARING"`
+}
+
+type UpdateAccountsRequest struct {
+	Name     string `json:"name" binding:"required"`
+	Currency string `json:"currency" binding:"required"`
 }
 
 type AccountsResponse struct {
-	Id int64 `json:"id"`
-	Name string `json:"name"`
-	Currency string `json:"currency"`
-	AccountType sql.NullString `json:"account_type"`
-	SystemRole sql.NullString `json:"system_role"`
-	CreatedAt time.Time `json:"created_at"`
+	Id               uuid.UUID     `json:"id"`
+	Name             string        `json:"name"`
+	Currency         string        `json:"currency"`
+	AccountType      string        `json:"account_type"`
+	SystemRole       string        `json:"system_role"`
+	CreatedAt        time.Time     `json:"created_at"`
+	HeldAmount       int64         `json:"held_amount"`
+	Balance          int64         `json:"balance"`
+	Status           AccountStatus `json:"status"`
+	AvailableBalance int64         `json:"available_balance"`
 }
