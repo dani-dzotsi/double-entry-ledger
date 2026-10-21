@@ -2,9 +2,9 @@ package accounts
 
 import (
 	"time"
-	"github.com/google/uuid"
 
-	currency "github.com/dani-dzotsi/double-entry-ledger/internal/currencies"
+	"github.com/dani-dzotsi/double-entry-ledger/internal/currencies"
+	"github.com/google/uuid"
 )
 
 type AccountType string
@@ -12,33 +12,32 @@ type SystemRole string
 type AccountStatus string
 
 const (
-	ACTIVE AccountStatus = "active"
-	FROZEN AccountStatus = "frozen"
-	CLOSED AccountStatus = "closed"
+	CUSTOMER AccountType = "CUSTOMER"
+	SYSTEM   AccountType = "SYSTEM"
 )
 
 const (
-	FUNDING SystemRole = "funding"
-	FX_CLEARING SystemRole = "fx_clearing"
-	ROUNDING SystemRole ="rounding"
+	FUNDING     SystemRole = "FUNDING"
+	FX_CLEARING SystemRole = "FX_CLEARING"
+	ROUNDING    SystemRole = "ROUNDING"
 )
 
 const (
-	CUSTOMER AccountType = "customer"
-	SYSTEM AccountType = "system"
+	ACTIVE AccountStatus = "ACTIVE"
+	FROZEN AccountStatus = "FROZEN"
+	CLOSED AccountStatus = "CLOSED"
 )
 
-type Account struct{
-	Id uuid.UUID `gorm:"type:uuid; primaryKey; default:gen_random_uuid()"`
-	Name string `gorm:"type:text; not null"`
-	CurrencyCode string `gorm:"type:char(3); not null; index; uniqueIndex:ux_accounts_system_role_currency,where:system_role IS NOT NULL"`
-	Currency currency.Currency `gorm:"foreignKey:CurrencyCode;constraint:OnDelete:CASCADE"`
-	Type AccountType `gorm:"type:text; not null; check:chk_account_type,type IN ('customer', 'system'); not null"`
-	SystemRole *SystemRole `gorm:"type:text;uniqueIndex:ux_accounts_system_role_currency;check:chk_accounts_system_role,(type = 'system' AND system_role IN ('funding','fx_clearing','rounding')) OR (type = 'customer' AND system_role IS NULL)"`
-	Balance uint64 `gorm:"type:bigint; not null; default:0; check:chk_accounts_amounts,held_amount >= 0 AND (type = 'system' OR (balance >= 0 AND held_amount <= balance))"`
-	HeldAmount uint64 `gorm:"type:bigint; not null; default:0"`
-	Status AccountStatus `gorm:"type:text; not null; check: chk_accounts_status,status IN ('active','frozen', 'closed')"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	// DeletedAt gorm.DeletedAt `gorm:"index"`  //enablles soft delete
+type Account struct {
+	ID           uuid.UUID           `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	Name         string              `gorm:"type:text;not null"`
+	Type         AccountType         `gorm:"type:text;not null;check:chk_accounts_type,type IN ('CUSTOMER','SYSTEM')"`
+	SystemRole   *SystemRole         `gorm:"type:text;uniqueIndex:ux_accounts_system_role_currency,priority:1,where:system_role IS NOT NULL;check:chk_accounts_system_role,(type = 'SYSTEM' AND system_role IN ('FUNDING','FX_CLEARING','ROUNDING')) OR (type = 'CUSTOMER' AND system_role IS NULL)"`
+	CurrencyCode string              `gorm:"column:currency;type:char(3);not null;uniqueIndex:ux_accounts_system_role_currency,priority:2,where:system_role IS NOT NULL"`
+	Currency     currencies.Currency `gorm:"foreignKey:CurrencyCode;references:Code;constraint:OnDelete:RESTRICT,OnUpdate:CASCADE"`
+	Balance      int64               `gorm:"type:bigint;not null;default:0;check:chk_accounts_customer_available_balance,type = 'SYSTEM' OR balance - held_amount >= 0"`
+	HeldAmount   int64               `gorm:"type:bigint;not null;default:0;check:chk_accounts_held_amount,held_amount >= 0"`
+	Status       AccountStatus       `gorm:"type:text;not null;default:'ACTIVE';check:chk_accounts_status,status IN ('ACTIVE','FROZEN','CLOSED')"`
+	CreatedAt    time.Time           `gorm:"type:timestamptz;not null"`
+	UpdatedAt    time.Time           `gorm:"type:timestamptz;not null"`
 }

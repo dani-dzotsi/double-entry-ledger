@@ -38,5 +38,5 @@ func Load() *Config {
 }
 
 func (c *Config) DSN() string {
-	return fmt.Sprintf("host=%s port=%s password=%s dbname=%s dbuser=%s sslmode=%s", c.DBHOST, c.DBPORT, c.DBPASSWORD, c.DBNAME, c.DBUSER, c.DBSSLMODE)
+	return fmt.Sprintf("host=%s port=%s password=%s dbname=%s user=%s sslmode=%s", c.DBHOST, c.DBPORT, c.DBPASSWORD, c.DBNAME, c.DBUSER, c.DBSSLMODE)
 }

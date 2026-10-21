@@ -3,24 +3,24 @@ package server
 import (
 	"github.com/dani-dzotsi/double-entry-ledger/internal/config"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-
-type Server struct{
+type Server struct {
 	engine *gin.Engine
-	cfg *config.Config
+	cfg    *config.Config
+	
 }
 
-func New(cfg *config.Config, registrar ...RouteRegistrar) *Server{
+func New(cfg *config.Config,db *gorm.DB, registrar ...RouteRegistrar) *Server {
 	engine := gin.Default()
-	SetupRoutes(engine, registrar...)
+	SetupRoutes(engine, db, registrar...)
 	return &Server{
 		engine: engine,
-		cfg: cfg,
+		cfg:    cfg,
 	}
 }
 
-
-func (s *Server) Run() error{
+func (s *Server) Run() error {
 	return s.engine.Run(":" + s.cfg.Port)
 }
