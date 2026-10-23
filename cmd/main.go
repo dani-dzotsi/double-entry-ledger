@@ -1,9 +1,7 @@
 package main
 
 import (
-	"fmt"
 	"log"
-
 	"github.com/dani-dzotsi/double-entry-ledger/internal/config"
 	"github.com/dani-dzotsi/double-entry-ledger/internal/server"
 	"gorm.io/driver/postgres"
@@ -11,8 +9,6 @@ import (
 )
 
 func main() {
-
-	fmt.Println("Hello double entry ledger")
 
 	cfg := config.Load()
 	db, err := gorm.Open(postgres.Open(cfg.DSN()), &gorm.Config{})
@@ -24,5 +20,4 @@ func main() {
 	if err := srv.Run(); err != nil {
 		log.Fatal(err)
 	}
-
 }

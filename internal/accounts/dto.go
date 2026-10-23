@@ -11,17 +11,16 @@ type CreateAccountsRequest struct {
 	Currency string `json:"currency" binding:"required"`
 }
 
-type UpdateAccountsRequest struct {
-	Name     string `json:"name" binding:"required"`
-	Currency string `json:"currency" binding:"required"`
+type UpdateAccountsStatusRequest struct {
+	Status AccountStatus `json:"status,omitempty"`
 }
 
 type AccountsResponse struct {
 	Id               uuid.UUID     `json:"id"`
 	Name             string        `json:"name"`
 	Currency         string        `json:"currency"`
-	AccountType      string        `json:"account_type"`
-	SystemRole       string        `json:"system_role"`
+	AccountType      AccountType        `json:"account_type"`
+	SystemRole       *SystemRole   `json:"system_role"`
 	CreatedAt        time.Time     `json:"created_at"`
 	HeldAmount       int64         `json:"held_amount"`
 	Balance          int64         `json:"balance"`
