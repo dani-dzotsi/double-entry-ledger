@@ -9,10 +9,9 @@ import (
 type Server struct {
 	engine *gin.Engine
 	cfg    *config.Config
-	
 }
 
-func New(cfg *config.Config,db *gorm.DB, registrar ...RouteRegistrar) *Server {
+func New(cfg *config.Config, db *gorm.DB, registrar ...RouteRegistrar) *Server {
 	engine := gin.Default()
 	SetupRoutes(engine, db, registrar...)
 	return &Server{
